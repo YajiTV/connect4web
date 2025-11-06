@@ -1,0 +1,31 @@
+{{define "title"}}Power 4 — Training{{end}}
+{{define "content"}}
+    <div class="controls gap-16 max-w-460">
+        <form action="/training/start" method="post" class="controls gap-16">
+            <input type="hidden" name="csrf" value="{{.CSRF}}">
+            <input type="hidden" name="level" value="1">
+            <button class="btn" type="submit">Play vs Bot Easy</button>
+        </form>
+        <form action="/training/start" method="post" class="controls gap-16">
+            <input type="hidden" name="csrf" value="{{.CSRF}}">
+            <input type="hidden" name="level" value="2">
+            <button class="btn" type="submit">Play vs Bot Normal</button>
+        </form>
+        <form action="/training/start" method="post" class="controls gap-16">
+            <input type="hidden" name="csrf" value="{{.CSRF}}">
+            <input type="hidden" name="level" value="3">
+            <button class="btn" type="submit">Play vs Bot Hard</button>
+        </form>
+        <form action="/training/start" method="post" class="controls gap-16">
+            <input type="hidden" name="csrf" value="{{.CSRF}}">
+            <input type="hidden" name="level" value="4">
+            <button class="btn" type="submit">Play vs Bot Expert</button>
+        </form>
+        <form action="/training/start" method="post" class="controls gap-16">
+            <input type="hidden" name="csrf" value="{{.CSRF}}">
+            <input type="hidden" name="level" value="5">
+            <button class="btn" type="submit">Play vs Bot Master</button>
+        </form>
+        <a class="btn btn-secondary" href="/">Home</a>
+    </div>
+{{end}}

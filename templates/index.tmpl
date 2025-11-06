@@ -1,0 +1,21 @@
+{{define "title"}}Power 4 — Home{{end}}
+{{define "content"}}
+    <div class="controls gap-24 max-w-460">
+        <form action="/rooms/create" method="post" class="controls gap-16">
+            <button class="btn" type="submit">Create private game</button>
+        </form>
+        <form action="/match/join" method="post" class="controls gap-16">
+            <button class="btn" type="submit">Join a random game</button>
+        </form>
+        <form action="/training" method="get" class="controls gap-16">
+            <button class="btn" type="submit">Training</button>
+        </form>
+        <form action="/rooms/join" method="post" class="controls gap-16">
+            <div class="control-row">
+                <label for="join_code">Game code</label>
+                <input id="join_code" name="code" type="text" placeholder="ABC123" pattern="[A-Za-z0-9]{4,8}" required>
+            </div>
+            <button class="btn btn-secondary" type="submit">Join</button>
+        </form>
+    </div>
+{{end}}

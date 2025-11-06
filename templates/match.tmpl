@@ -1,0 +1,17 @@
+{{define "title"}}Matchmaking{{end}}
+{{define "content"}}
+    <div class="controls gap-16 max-w-520">
+        <div class="status m-0" style="justify-self:center">Searching for an opponent…</div>
+        <div class="panel p-12" style="display:grid;gap:6px;justify-items:center">
+            <p class="status m-0">Your Elo: <span style="font-weight:800">{{.YourElo}}</span></p>
+            <p class="status m-0">Range: <span style="font-weight:800">{{.MinElo}}</span> to <span style="font-weight:800">{{.MaxElo}}</span></p>
+        </div>
+        <meta http-equiv="refresh" content="0;url=/match/check/{{.Ticket}}">
+        <div class="control-row" style="justify-items:center;gap:12px">
+            <form method="post" action="/match/leave/{{.Ticket}}">
+                <input type="hidden" name="csrf" value="{{.CSRF}}">
+                <button class="header-link" type="submit">Cancel search</button>
+            </form>
+        </div>
+    </div>
+{{end}}

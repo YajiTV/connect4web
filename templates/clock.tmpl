@@ -1,0 +1,16 @@
+{{define "clock"}}
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Clock {{.Code}}</title>
+  <link rel="stylesheet" href="/static/css/base.css">
+  <link rel="stylesheet" href="/static/css/util.css">
+  <meta name="color-scheme" content="light dark">
+  <meta http-equiv="refresh" content="1;url={{.RefreshURL}}">
+</head>
+<body class="bg-transparent m-0 px-0">
+  <p class="status text-center m-0">Time left: {{.TimeLeft}}</p>
+</body>
+</html>
+{{end}}

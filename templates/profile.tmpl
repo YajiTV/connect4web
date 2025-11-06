@@ -1,0 +1,65 @@
+{{define "title"}}Profile {{.ProfileUsername}}{{end}}
+{{define "content"}}
+    <div class="controls gap-16 max-w-560">
+        <div class="panel p-18" style="display:grid;gap:14px">
+            <div class="status m-0">
+                Profile of <span style="font-weight:800">{{.ProfileUsername}}</span>
+            </div>
+
+            <div class="grid-2 gap-12">
+                <div class="panel p-14">
+                    <div class="status m-0">Elo</div>
+                    <p class="victory" style="margin:4px 0">{{.Elo}}</p>
+                </div>
+                <div class="panel p-14">
+                    <div class="status m-0">Games</div>
+                    <p class="victory" style="margin:4px 0">{{.Games}}</p>
+                </div>
+                <div class="panel p-14">
+                    <div class="status m-0">Wins</div>
+                    <p class="victory" style="margin:4px 0">{{.Wins}}</p>
+                </div>
+                <div class="panel p-14">
+                    <div class="status m-0">Losses</div>
+                    <p class="victory" style="margin:4px 0">{{.Losses}}</p>
+                </div>
+            </div>
+
+            {{if .LoggedIn}}{{if ne .Self .ProfileUsername}}
+                <div class="controls" style="justify-items:center">
+                    {{if .AreFriends}}
+                        <form method="post" action="/friends/challenge">
+                            <input type="hidden" name="csrf" value="{{.CSRF}}">
+                            <input type="hidden" name="friend" value="{{.ProfileUsername}}">
+                            <button type="submit" class="fr-btn fr-btn-accent">Challenge</button>
+                        </form>
+                    {{else if .OutPending}}
+                        <span class="muted">Request sent</span>
+                    {{else if .InPending}}
+                        <div class="controls" style="grid-auto-flow:column;justify-content:center;gap:8px">
+                            <form method="post" action="/friends/request/accept">
+                                <input type="hidden" name="csrf" value="{{.CSRF}}">
+                                <input type="hidden" name="from" value="{{.ProfileUsername}}">
+                                <input type="hidden" name="back" value="/u/{{.ProfileUsername}}">
+                                <button type="submit" class="fr-btn">Accept</button>
+                            </form>
+                            <form method="post" action="/friends/request/decline">
+                                <input type="hidden" name="csrf" value="{{.CSRF}}">
+                                <input type="hidden" name="from" value="{{.ProfileUsername}}">
+                                <input type="hidden" name="back" value="/u/{{.ProfileUsername}}">
+                                <button type="submit" class="fr-btn">Decline</button>
+                            </form>
+                        </div>
+                    {{else}}
+                        <form method="post" action="/friends/request">
+                            <input type="hidden" name="csrf" value="{{.CSRF}}">
+                            <input type="hidden" name="to" value="{{.ProfileUsername}}">
+                            <input type="hidden" name="back" value="/u/{{.ProfileUsername}}">
+                            <button type="submit" class="fr-btn fr-btn-primary">Add</button>
+                        </form>
+                    {{end}}
+                </div>
+            {{end}}{{end}}
+        </div>
+    </div>
+{{end}}

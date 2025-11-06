@@ -1,0 +1,20 @@
+{{define "title"}}Power 4 — Game {{.Code}}{{end}}
+{{define "content"}}
+  <div class="flex items-center justify-between gap-12 mb-12">
+    <p class="status m-0">
+      {{if .Random}}
+        Random match
+      {{else}}
+        {{if .Reveal}}
+          Code: <span style="font-weight:800;letter-spacing:0.02em">{{.Code}}</span>
+          <a class="header-link" href="/game/{{.Code}}">Hide</a>
+        {{else}}
+          Game code hidden
+          <a class="header-link" href="/game/{{.Code}}?reveal=1">Show</a>
+        {{end}}
+      {{end}}
+    </p>
+    <a class="btn btn-secondary" href="/">Home</a>
+  </div>
+  <iframe title="Board" name="board" src="/board/{{.Code}}?rev=0" class="w-full rounded-16 shadow-2 bg-transparent" style="height:740px;border:0;"></iframe>
+{{end}}

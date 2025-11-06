@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Your Friends</title>
+    <meta http-equiv="refresh" content="2">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/friends.css">
+</head>
+<body class="iframe-body">
+<div class="iframe-panel">
+    {{if .Friends}}
+        <ul>
+            {{range .Friends}}
+                <li style="margin:6px 0">
+                    {{.}}
+                    <form method="post" action="/friends/challenge" target="_top" style="display:inline-block;margin-left:8px">
+                        <input type="hidden" name="csrf" value="{{$.CSRF}}">
+                        <input type="hidden" name="friend" value="{{.}}">
+                        <button type="submit" class="fr-btn fr-btn-accent">Challenge</button>
+                    </form>
+                </li>
+            {{end}}
+        </ul>
+    {{else}}
+        <div class="muted">No friends yet</div>
+    {{end}}
+</div>
+</body>
+</html>

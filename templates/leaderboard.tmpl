@@ -1,0 +1,43 @@
+{{define "title"}}Leaderboard{{end}}
+{{define "content"}}
+  <div class="controls gap-16 max-w-820">
+    <form method="get" action="/leaderboard" class="controls gap-10">
+      <div class="control-row">
+        <label for="q">Search player</label>
+        <input id="q" name="q" type="text" placeholder="Username" value="{{.Query}}">
+      </div>
+      <button class="btn btn-secondary" type="submit">Search</button>
+    </form>
+
+    <div class="panel p-16">
+      <div class="overflow-auto">
+        <table style="width:100%;border-collapse:separate;border-spacing:0 8px">
+          <thead>
+            <tr style="text-align:left;color:var(--muted);font-weight:600">
+              <th style="padding:8px 10px">#</th>
+              <th style="padding:8px 10px">Player</th>
+              <th style="padding:8px 10px">Elo</th>
+              <th style="padding:8px 10px">Games</th>
+              <th style="padding:8px 10px">Wins</th>
+              <th style="padding:8px 10px">Losses</th>
+              <th style="padding:8px 10px">Win rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{range .Rows}}
+            <tr>
+              <td style="padding:8px 10px">{{.Rank}}</td>
+              <td style="padding:8px 10px"><a href="/u/{{.Username}}" class="header-link">{{.Username}}</a></td>
+              <td style="padding:8px 10px">{{.Elo}}</td>
+              <td style="padding:8px 10px">{{.Games}}</td>
+              <td style="padding:8px 10px">{{.Wins}}</td>
+              <td style="padding:8px 10px">{{.Losses}}</td>
+              <td style="padding:8px 10px">{{.WinRate}}%</td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{{end}}

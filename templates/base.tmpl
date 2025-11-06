@@ -1,0 +1,54 @@
+{{define "base"}}
+    <!doctype html>
+    <html lang="fr">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>{{template "title" .}}</title>
+        <link rel="stylesheet" href="/static/css/base.css">
+        <link rel="stylesheet" href="/static/css/header.css">
+        <link rel="stylesheet" href="/static/css/board.css">
+        <link rel="stylesheet" href="/static/css/error.css">
+        <link rel="stylesheet" href="/static/css/util.css">
+        <link rel="stylesheet" href="/static/css/friends.css">
+        <link rel="icon" type="image/png" href="/static/assets/connect4.png">
+    </head>
+    <body>
+    <header class="site-header">
+        <h1><a href="/" class="site-title-link">Power 4</a></h1>
+        <nav class="header-actions">
+            <a class="header-link" href="/">Home</a>
+            <a class="header-link" href="/leaderboard">Leaderboard</a>
+            {{if .LoggedIn}}
+                <a class="header-link friends-link" href="/friends" style="position:relative">
+                    Friends
+                    {{if .HasFriendAlerts}}
+                        <span class="badge">{{.FriendAlertCount}}</span>
+                    {{end}}
+                </a>
+                <div class="user-menu" tabindex="0">
+                    <button class="avatar" aria-haspopup="menu" aria-expanded="false">
+                        <span class="avatar-initials" data-letters="{{.Initials}}"></span>
+                    </button>
+                    <div class="menu-content" role="menu">
+                        <a class="menu-item" href="/u/{{.Username}}" role="menuitem">Profile</a>
+                        <form action="/logout" method="post">
+                            <input type="hidden" name="csrf" value="{{.CSRF}}">
+                            <button class="menu-item-secondary" type="submit" role="menuitem">Log out</button>
+                        </form>
+                    </div>
+                </div>
+            {{else}}
+                <a class="header-link-secondary" href="/login">Log in</a>
+                <a class="header-link-secondary" href="/signup">Sign up</a>
+            {{end}}
+        </nav>
+    </header>
+    <main class="container">
+        <div class="panel">
+            {{template "content" .}}
+        </div>
+    </main>
+    </body>
+    </html>
+{{end}}

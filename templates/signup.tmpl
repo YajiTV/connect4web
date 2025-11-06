@@ -1,0 +1,29 @@
+{{define "title"}}Create account{{end}}
+{{define "content"}}
+  <div class="controls gap-16" style="max-width:420px;margin:0 auto">
+    <div class="status m-0" style="justify-self:center">
+      <span class="badge">Sign up</span>
+    </div>
+    {{if .Error}}
+    <div class="error-message" role="alert" style="color:#dc2626;background:#fee2e2;padding:12px;border-radius:10px;text-align:center;font-weight:700;border:1px solid #fecaca">
+      {{.Error}}
+    </div>
+    {{end}}
+    <form action="/signup" method="post" class="controls gap-16">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <div class="control-row">
+        <label for="su_username">Username</label>
+        <input id="su_username" name="username" type="text" placeholder="Username" autocomplete="username" spellcheck="false" required>
+      </div>
+      <div class="control-row">
+        <label for="su_password">Password</label>
+        <input id="su_password" name="password" type="password" placeholder="Password" autocomplete="new-password" spellcheck="false" required>
+      </div>
+      <button class="btn" type="submit">Create</button>
+    </form>
+    <div class="status m-0" style="justify-self:center;font-weight:600">
+      Already have an account?
+      <a class="header-link" href="/login" aria-current="false">Sign in</a>
+    </div>
+  </div>
+{{end}}
