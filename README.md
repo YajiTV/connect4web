@@ -73,9 +73,9 @@
 
 Clone the repository
 
-git clone https://ytrack.learn.ynov.com/git/debaptiste/power4web
+git clone https://github.com/YajiTV/connect4web
 
-cd power4
+cd connect4web
 
 Run the server
 
@@ -139,28 +139,90 @@ Connect **four discs** horizontally, vertically, or diagonally before your oppon
 ## 📁 Project Structure
 
 ```
-power4/
-├── templates/ # HTML templates
-│ ├── base.tmpl
-│ ├── game.tmpl
-│ ├── friends.tmpl
-│ └── ...
-├── static/
-│ ├── css/ # Stylesheets
-│ └── assets/ # Images, icons
+onnect4/
+├── main.go                     # Point d'entrée : démarre le serveur HTTP (port 8090) et appelle app.Boot
+
+├── go.mod                      # Module Go (nom du projet, dépendances)
+├── go.sum                      # Verrouillage des versions de dépendances
+├── README.md                   # Documentation du projet
+├── LICENSE                     # Licence (MIT, auteurs : Baptiste DM & Mathys PK)
+
 ├── internal/
-│ ├── auth/ # Authentication & sessions
-│ ├── game/ # Game logic (board, win detection)
-│ └── http/ # HTTP handlers
-│ ├── gamehandler.go
-│ ├── friendshandler.go
-│ ├── matchhandler.go
-│ └── ...
-├── data/ # Persistent storage (auto-created)
-│ ├── users.json
-│ ├── friends.json
-│ └── sessions/
-└── main.go # Entry point
+│   ├── app/
+│   │   └── app.go              # Boot de l'application : charge templates, sessions, stores, routes et retourne le mux
+│   │
+│   ├── auth/
+│   │   ├── store.go            # Gestion des utilisateurs : création, authentification, persistance JSON, stats (Elo, wins, losses)
+│   │   ├── session.go          # Gestion des sessions : cookie signé, CSRF, login/logout, CurrentUser
+│   │   ├── elo.go              # Algorithme Elo : probabilité de victoire et arrondi des points
+│   │   └── util.go             # Fonctions utilitaires éventuelles (hash, validation)
+│   │
+│   ├── game/
+│   │   ├── board.go            # Représentation du plateau 7×6, détection de victoire (lignes, colonnes, diagonales)
+│   │   └── moves.go            # AddPeon : pose un pion dans une colonne (gravité), incrémente Moves, gère erreurs
+│   │
+│   └── http/
+│       ├── router.go           # NewRouter : construit le mux, enregistre toutes les routes HTTP, sert les fichiers statiques
+│       ├── header.go           # makeHeader : données communes du header (login, initials, badge d’alertes amis, CSRF)
+│       ├── homehandler.go      # Page d’accueil, handler 404
+│       ├── authhandler.go      # /signup, /login, /logout : formulaires + validation + démarrage de session
+│       ├── profilehandler.go   # /u/{username} : profil public, stats et état d’amitié (ami, pending, etc.)
+│       ├── ruleshandler.go     # /rules : page des règles du jeu
+│       ├── leaderboardhandler.go # /leaderboard : classement global des joueurs par Elo
+│       ├── gamehandler.go      # /rooms/create, /rooms/join, /game/{code}, /board/{code}, /play/... : gestion des parties privées
+│       ├── matchhandler.go     # /match/... : matchmaking aléatoire basé sur l’Elo, file d’attente, long‑polling
+│       ├── friendshandler.go   # /friends/... : système d’amis, demandes, défis, iframes auto‑refresh
+│       ├── friends_store.go    # Stockage en mémoire + JSON des amis, demandes, défis (graphes d’amitiés)
+│       ├── types.go            # Types Room, file de matchmaking, structures partagées pour les handlers
+│       └── errors.go           # Helpers pour NotFound, erreurs génériques (si séparé)
+
+├── templates/
+│   ├── base.tmpl               # Template de base (layout, header, container)
+│   ├── index.tmpl              # Page d’accueil (Home)
+│   ├── login.tmpl              # Formulaire de connexion
+│   ├── signup.tmpl             # Formulaire d’inscription
+│   ├── profile.tmpl            # Profil utilisateur (stats + boutons amis/défis)
+│   ├── rules.tmpl              # Règles du jeu
+│   ├── leaderboard.tmpl        # Classement
+│   ├── game.tmpl               # Page de partie (plateau + infos joueurs + timer)
+│   ├── board.tmpl              # Vue "plateau" seule (utilisée pour le rafraîchissement côté client)
+│   ├── clock.tmpl              # Fragment d’horloge / compte à rebours
+│   ├── match.tmpl              # Page d’attente matchmaking (Elo range, recherche d’adversaire)
+│   ├── friends.tmpl            # Page principale "Friends" (recherche + 2 iframes)
+│   ├── friends_requests_iframe.tmpl # Iframe : demandes d’amis + défis reçus, auto‑refresh
+│   ├── friends_friends_iframe.tmpl  # Iframe : liste d’amis + boutons Challenge, auto‑refresh
+│   ├── challenge_wait.tmpl     # Page "Waiting for your friend..." après envoi d’un défi
+│   ├── training.tmpl           # Mode entraînement (si présent)
+│   ├── 404.tmpl                # Page d’erreur 404 stylée
+│   └── ...                     # Autres templates éventuels
+
+├── static/
+│   ├── css/
+│   │   ├── base.css            # Styles globaux (layout, typographie, couleurs)
+│   │   ├── header.css          # Styles du header (nav, avatar, badge notifications)
+│   │   ├── board.css           # Styles du plateau de jeu (grille, pions, animations)
+│   │   ├── friends.css         # Styles de la page Friends et des iframes
+│   │   ├── error.css           # Styles des pages d’erreur (404, etc.)
+│   │   └── util.css            # Classes utilitaires (boutons, flex, helpers)
+│   │
+│   └── assets/
+│       ├── connect4.png        # Icône / favicon du site
+│       ├── logo.svg            # Logo éventuel du projet
+│       └── ...                 # Autres images (pions, backgrounds, etc.)
+
+├── data/
+│   ├── users.json              # Base d’utilisateurs : username, hash de mot de passe, Elo, stats de parties
+│   ├── friends.json            # Graphes d’amitiés, demandes en attente, invites de défis persistées
+│   ├── session.key             # Clé secrète HMAC (32 octets) pour signer les cookies de session
+│   └── sessions/               # Dossier éventuel pour stockage de sessions côté serveur (si utilisé)
+
+└── docs/
+    ├── screenshot-home.png     # Capture d’écran page d’accueil
+    ├── screenshot-game.png     # Capture d’écran d’une partie
+    ├── screenshot-friends.png  # Capture d’écran système d’amis
+    ├── screenshot-leaderboard.png # Capture d’écran du classement
+    └── gameplay-demo.gif       # GIF animé de démo du gameplay
+
 ```
 
 ---
