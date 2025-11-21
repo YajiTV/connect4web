@@ -10,12 +10,16 @@ import (
 	"power4/internal/auth"
 )
 
+// ShowProfile renders a user's public profile with friendship context
 func ShowProfile(w http.ResponseWriter, r *http.Request) {
+	// extracts the profile username from the URL
 	username := path.Base(strings.TrimSuffix(r.URL.Path, "/"))
 	if username == "" || userStore == nil {
 		NotFound(w, r)
 		return
 	}
+
+	// looks up the user
 	u := userStore.GetByUsername(username)
 	if u == nil {
 		NotFound(w, r)
@@ -25,11 +29,13 @@ func ShowProfile(w http.ResponseWriter, r *http.Request) {
 	h := makeHeader(w, r)
 	csrf := auth.CSRFToken(w, r)
 
+	// computes friendship state relative to the viewer
 	areFriends, outPending, inPending := false, false, false
 	if h.LoggedIn && !strings.EqualFold(h.Username, u.Username) {
 		areFriends, outPending, inPending = friendsState(h.Username, u.Username)
 	}
 
+	// parses and renders the template
 	tmpl, err := template.ParseFS(templateFS, "base.tmpl", "profile.tmpl")
 	if err != nil {
 		log.Printf("Template error: %v", err)

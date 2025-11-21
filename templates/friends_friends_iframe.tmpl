@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>Your Friends</title>
+    <!-- simple auto-refresh to keep the iframe list up to date -->
     <meta http-equiv="refresh" content="2">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/static/css/base.css">
@@ -10,11 +11,14 @@
 </head>
 <body class="iframe-body">
 <div class="iframe-panel">
+    {{/* renders a list only when Friends is non-empty */}}
     {{if .Friends}}
         <ul>
+            {{/* ranges over the slice of usernames; dot is the username string */}}
             {{range .Friends}}
                 <li style="margin:6px 0">
                     {{.}}
+                    {{/* challenge form posts to parent; CSRF pulled from the top-level dot via $. */}}
                     <form method="post" action="/friends/challenge" target="_top" style="display:inline-block;margin-left:8px">
                         <input type="hidden" name="csrf" value="{{$.CSRF}}">
                         <input type="hidden" name="friend" value="{{.}}">

@@ -1,0 +1,40 @@
+{{define "title"}}Rules{{end}}
+
+{{define "content"}}
+<h2>Rules</h2>
+
+<h3><u>Objective :</u></h3>
+<p>
+  The goal is to connect four of your discs in a continuous line before your
+  opponent does. A line can be horizontal, vertical, or diagonal.
+</p>
+
+<h3><u>Board and Pieces :</u></h3>
+<ul>
+  <li>Standard grid: 7 columns × 6 rows.</li>
+  <li>Two players, each with a unique disc colour.</li>
+  <li>Discs are dropped from the top; each occupies the lowest free slot in its column.</li>
+</ul>
+
+<h3><u>Turn Order &amp; Win Conditions</u></h3>
+<ul>
+  <li>Players alternate turns, one disc per turn.</li>
+  <li>A player wins immediately upon forming four in a row horizontally, vertically, or diagonally.</li>
+  <li>If all 42 cells fill with no winner, the game is a draw.</li>
+</ul>
+
+<h3><u>Power 4 Web-App Specifics :</u></h3>
+<ul>
+  <li><strong>Time control</strong> : each move must be played before the turn deadline; letting the timer expire forfeits the game.</li>
+  <li><strong>Rematch</strong> : after a game ends, both players may request a rematch; the starting player alternates.</li>
+  <li><strong>Private rooms</strong> : "Create private game" generates a room code you can share; "Join a random game" uses Elo matchmaking.</li>
+  <li><strong>Friends</strong> : add users by exact username, accept requests, and click "Challenge" to invite a friend to a lobby.</li>
+  <li><strong>Fair play</strong> : use the Forfeit button to concede instead of stalling or abandoning games.</li>
+</ul>
+
+<h3><u>Notes :</u></h3>
+<ul>
+  <li>The first move from the centre column is theoretically strongest on a 7 × 6 board.</li>
+  <li>Moves are final once confirmed by the server; no undo.</li>
+</ul>
+{{end}}

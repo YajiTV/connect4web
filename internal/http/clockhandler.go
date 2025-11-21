@@ -12,8 +12,12 @@ import (
 	"power4/internal/game"
 )
 
+// ShowClock renders the per‑turn countdown and updates deadlines or forfeits when time elapses
 func ShowClock(w http.ResponseWriter, r *http.Request) {
+	// extracts room code from the URL
 	code := path.Base(strings.TrimSuffix(r.URL.Path, "/"))
+
+	// looks up the room
 	roomsMu.RLock()
 	rm := rooms[code]
 	roomsMu.RUnlock()
@@ -22,10 +26,12 @@ func ShowClock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// disables caching so the clock stays fresh
 	w.Header().Set("Cache-Control", "no-store, max-age=0, must-revalidate")
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("Expires", "0")
 
+	// checks and updates turn deadline
 	now := time.Now()
 	overNow := false
 	scoreA := 0.5
@@ -50,17 +56,21 @@ func ShowClock(w http.ResponseWriter, r *http.Request) {
 			overNow = true
 		}
 	}
+
+	// computes remaining time, clamped to zero
 	remaining := time.Until(rm.TurnDeadline)
 	if remaining < 0 {
 		remaining = 0
 	}
 	roomsMu.Unlock()
 
+	// generates Elo update if a forfeit ended the game
 	if overNow && userStore != nil && rm.Player1User != "" && rm.Player2User != "" {
 		_ = userStore.ApplyMatch(rm.Player1User, rm.Player2User, scoreA, 32)
 		notify(rm)
 	}
 
+	// formats time as MM:SS or placeholder when hidden
 	min2 := int(remaining.Minutes()) % 60
 	sec := int(remaining.Seconds()) % 60
 	tleft := ""
@@ -70,8 +80,10 @@ func ShowClock(w http.ResponseWriter, r *http.Request) {
 		tleft = fmt.Sprintf("%02d:%02d", min2, sec)
 	}
 
+	// generates a cache‑busting refresh URL
 	refreshURL := "/clock/" + rm.Code + "?ts=" + strconvI(int(time.Now().UnixNano()))
 
+	// renders the clock partial
 	tmpl, err := template.ParseFS(templateFS, "clock.tmpl")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -88,6 +100,7 @@ func ShowClock(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// strconvI converts an int to its base‑10 string form
 func strconvI(n int) string {
 	return strconv.FormatInt(int64(n), 10)
 }

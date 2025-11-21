@@ -1,0 +1,16 @@
+run:
+  timeout: 3m
+  tests: true
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - errcheck
+    - gofmt
+    - goimports
+  disable:
+    - lll  # ignore les lignes trop longues (souvent inutile en web)
+
+issues:
+  exclude-use-default: false

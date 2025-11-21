@@ -11,21 +11,26 @@ import (
 	"power4/internal/game"
 )
 
+// ShowBoard renders the board page, handles long polling, bot moves, and turn timeouts
 func ShowBoard(w http.ResponseWriter, r *http.Request) {
+	// resolves the room from the URL
 	rm, code := roomFromPath(r.URL.Path)
 	if rm == nil || code == "" {
 		NotFound(w, r)
 		return
 	}
 
+	// identifies the player for this request
 	pid := getOrSetPID(w, r)
 
+	// reads query parameters controlling refresh behavior
 	q := r.URL.Query()
 	qrev := strings.TrimSpace(q.Get("rev"))
 	immediate := q.Get("immediate") == "1"
 	forceNew := q.Get("m") == "1"
 	hold := r.URL.Query().Get("hold") == "1"
 
+	// parses current revision
 	cur := 0
 	if qrev != "" {
 		if n, err := strconv.Atoi(qrev); err == nil {
@@ -33,14 +38,17 @@ func ShowBoard(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// lets the bot play when it is its turn and not holding
 	if rm.Bot && !rm.Game.Over && rm.Player2ID == "BOT" && rm.Game.NextPlayer == game.Player2 && !hold {
 		col := game.ComputeBotMove(&rm.Game.Board, game.Player2, rm.BotLevel)
 		if col >= 0 {
 			_ = game.Play(rm.Game, col)
+
 			roomsMu.Lock()
 			rm.Rev++
 			rm.TurnDeadline = time.Now().Add(2 * time.Minute)
 			roomsMu.Unlock()
+
 			notify(rm)
 			http.Redirect(w, r, "/board/"+code+"?rev="+strconv.Itoa(rm.Rev)+"&immediate=1&m=1", http.StatusSeeOther)
 			return
@@ -49,6 +57,7 @@ func ShowBoard(w http.ResponseWriter, r *http.Request) {
 
 	isNewMove := false
 
+	// long‑polls for updates unless immediate or already behind
 	if !immediate && cur >= rm.Rev {
 		ch, unsub := subscribe(rm)
 		defer unsub()
@@ -56,13 +65,16 @@ func ShowBoard(w http.ResponseWriter, r *http.Request) {
 		case <-ch:
 			isNewMove = true
 		case <-time.After(25 * time.Second):
+			// timeout without updates
 		case <-r.Context().Done():
 			return
 		}
 	}
 
+	// disables caching to avoid stale board views
 	w.Header().Set("Cache-Control", "no-store")
 
+	// manages turn deadlines and possible forfeits
 	now := time.Now()
 	overNow := false
 	scoreA := 0.5
@@ -92,6 +104,7 @@ func ShowBoard(w http.ResponseWriter, r *http.Request) {
 		notify(rm)
 	}
 
+	// computes whether the current player can act
 	canPlay := false
 	if ready(rm) && !rm.Game.Over {
 		if rm.Game.NextPlayer == game.Player1 && rm.Player1ID == pid {
@@ -102,6 +115,7 @@ func ShowBoard(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// prepares template with helpers
 	tmpl, err := template.New("").Funcs(template.FuncMap{
 		"Iterate":      Iterate,
 		"NextEmptyRow": NextEmptyRow,
@@ -113,6 +127,7 @@ func ShowBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// determines self player index
 	h := makeHeader(w, r)
 	self := 0
 	if pid == rm.Player1ID {
@@ -121,6 +136,7 @@ func ShowBoard(w http.ResponseWriter, r *http.Request) {
 		self = 2
 	}
 
+	// infers the last player from who plays next
 	lastPlayer := game.Cell(0)
 	if rm.Game.NextPlayer == game.Player1 {
 		lastPlayer = game.Player2
@@ -128,6 +144,7 @@ func ShowBoard(w http.ResponseWriter, r *http.Request) {
 		lastPlayer = game.Player1
 	}
 
+	// signals animations for newly observed moves
 	if qrev != "" && cur < rm.Rev {
 		isNewMove = true
 	}
@@ -138,18 +155,20 @@ func ShowBoard(w http.ResponseWriter, r *http.Request) {
 		isNewMove = true
 	}
 
+	// adjusts animation flags based on referrer paths
 	ref := r.Referer()
 	fromPlay := strings.Contains(ref, "/play/")
 	fromRematch := strings.Contains(ref, "/rematch/")
-
 	if fromRematch {
 		isNewMove = false
 	} else if fromPlay && self != 0 && lastPlayer == game.Cell(self) {
 		isNewMove = true
 	}
 
+	// validates that a last move is present
 	validLast := rm.Game.LastRow >= 0 && rm.Game.LastCol >= 0
 
+	// renders the board
 	data := struct {
 		Code       string
 		Rev        int

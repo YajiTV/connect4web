@@ -1,4 +1,5 @@
 {{define "title"}}Profile {{.ProfileUsername}}{{end}}
+
 {{define "content"}}
     <div class="controls gap-16 max-w-560">
         <div class="panel p-18" style="display:grid;gap:14px">
@@ -6,6 +7,7 @@
                 Profile of <span style="font-weight:800">{{.ProfileUsername}}</span>
             </div>
 
+            {{/* stats grid: elo/games/wins/losses */}}
             <div class="grid-2 gap-12">
                 <div class="panel p-14">
                     <div class="status m-0">Elo</div>
@@ -25,23 +27,27 @@
                 </div>
             </div>
 
+            {{/* action area only when viewing someone else's profile while logged in */}}
             {{if .LoggedIn}}{{if ne .Self .ProfileUsername}}
                 <div class="controls" style="justify-items:center">
+                    {{/* if already friends, allow direct challenge */}}
                     {{if .AreFriends}}
                         <form method="post" action="/friends/challenge">
                             <input type="hidden" name="csrf" value="{{.CSRF}}">
                             <input type="hidden" name="friend" value="{{.ProfileUsername}}">
                             <button type="submit" class="fr-btn fr-btn-accent">Challenge</button>
                         </form>
+                        {{/* outgoing request already sent */}}
                     {{else if .OutPending}}
                         <span class="muted">Request sent</span>
+                        {{/* incoming request: let user accept or decline */}}
                     {{else if .InPending}}
                         <div class="controls" style="grid-auto-flow:column;justify-content:center;gap:8px">
                             <form method="post" action="/friends/request/accept">
                                 <input type="hidden" name="csrf" value="{{.CSRF}}">
                                 <input type="hidden" name="from" value="{{.ProfileUsername}}">
                                 <input type="hidden" name="back" value="/u/{{.ProfileUsername}}">
-                                <button type="submit" class="fr-btn">Accept</button>
+                                <button type="submit" class="fr-btn fr-btn-accent">Accept</button>
                             </form>
                             <form method="post" action="/friends/request/decline">
                                 <input type="hidden" name="csrf" value="{{.CSRF}}">
@@ -50,6 +56,7 @@
                                 <button type="submit" class="fr-btn">Decline</button>
                             </form>
                         </div>
+                        {{/* neither friends nor pending: can send a friend request */}}
                     {{else}}
                         <form method="post" action="/friends/request">
                             <input type="hidden" name="csrf" value="{{.CSRF}}">

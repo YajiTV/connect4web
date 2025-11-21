@@ -1,8 +1,6 @@
 package httphandler
 
 import (
-	"crypto/rand"
-	"encoding/base32"
 	"html/template"
 	"net/http"
 	"path"
@@ -11,14 +9,19 @@ import (
 
 	"power4/internal/auth"
 	"power4/internal/game"
+	"power4/internal/util"
 )
 
+// token generates a random base32 ticket id
 func token() string {
-	b := make([]byte, 16)
-	rand.Read(b)
-	return strings.TrimRight(base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(b), "=")
+	id, err := util.RandBase32(16)
+	if err != nil {
+		return ""
+	}
+	return id
 }
 
+// rangeFor returns the current matchmaking Elo range for a waiter and grows it over time
 func rangeFor(w *waiter) int {
 	el := time.Since(w.Created)
 	base := 50
@@ -31,6 +34,7 @@ func rangeFor(w *waiter) int {
 	return r
 }
 
+// abs returns the absolute value of x
 func abs(x int) int {
 	if x < 0 {
 		return -x
@@ -38,6 +42,7 @@ func abs(x int) int {
 	return x
 }
 
+// removeTicket removes a ticket from both queues and indexes
 func removeTicket(t string) {
 	mmMu.Lock()
 	for i, wq := range waiting {
@@ -51,6 +56,7 @@ func removeTicket(t string) {
 	mmMu.Unlock()
 }
 
+// purgeUserFromQueue removes all queue entries for a username
 func purgeUserFromQueue(username string) {
 	mmMu.Lock()
 	i := 0
@@ -65,6 +71,7 @@ func purgeUserFromQueue(username string) {
 	mmMu.Unlock()
 }
 
+// JoinRandom enqueues the user for matchmaking or pairs them immediately if a compatible opponent exists
 func JoinRandom(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -82,6 +89,7 @@ func JoinRandom(w http.ResponseWriter, r *http.Request) {
 	}
 	pid := getOrSetPID(w, r)
 
+	// tries to find a compatible opponent
 	mmMu.Lock()
 	for _, op := range waiting {
 		if op.PID == pid || op.Username == u.Username {
@@ -106,9 +114,12 @@ func JoinRandom(w http.ResponseWriter, r *http.Request) {
 			}
 			rm.Game.Player1Name = op.Username
 			rm.Game.Player2Name = u.Username
+
 			roomsMu.Lock()
 			rooms[code] = rm
 			roomsMu.Unlock()
+
+			// removes matched opponent from queue
 			for i, wq := range waiting {
 				if wq.Ticket == op.Ticket {
 					waiting = append(waiting[:i], waiting[i+1:]...)
@@ -116,6 +127,8 @@ func JoinRandom(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			delete(tickets, op.Ticket)
+
+			// notifies opponent and redirects
 			select {
 			case op.Ch <- code:
 			default:
@@ -125,6 +138,8 @@ func JoinRandom(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
+	// reuses existing ticket if already queued
 	for _, wq := range waiting {
 		if wq.Username == u.Username {
 			t := wq.Ticket
@@ -133,6 +148,8 @@ func JoinRandom(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
+	// enqueues a new waiter
 	t := token()
 	wr := &waiter{
 		Ticket:   t,
@@ -149,13 +166,16 @@ func JoinRandom(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/match/"+t, http.StatusSeeOther)
 }
 
+// ShowMatch shows the current matchmaking status and search range
 func ShowMatch(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
+
 	t := path.Base(strings.TrimSuffix(r.URL.Path, "/"))
 	if t == "" {
 		NotFound(w, r)
 		return
 	}
+
 	mmMu.Lock()
 	wr := tickets[t]
 	mmMu.Unlock()
@@ -163,6 +183,7 @@ func ShowMatch(w http.ResponseWriter, r *http.Request) {
 		NotFound(w, r)
 		return
 	}
+
 	rng := rangeFor(wr)
 	min2 := wr.Elo - rng
 	max2 := wr.Elo + rng
@@ -172,6 +193,7 @@ func ShowMatch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	h := makeHeader(w, r)
 	_ = tmpl.ExecuteTemplate(w, "base", struct {
 		Ticket           string
@@ -198,13 +220,16 @@ func ShowMatch(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// CheckMatch waits for a match, pairs if a compatible opponent appears, or refreshes
 func CheckMatch(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
+
 	t := path.Base(strings.TrimSuffix(r.URL.Path, "/"))
 	if t == "" {
 		NotFound(w, r)
 		return
 	}
+
 	mmMu.Lock()
 	wr := tickets[t]
 	if wr == nil {
@@ -212,6 +237,8 @@ func CheckMatch(w http.ResponseWriter, r *http.Request) {
 		NotFound(w, r)
 		return
 	}
+
+	// tries to pair immediately
 	rng := rangeFor(wr)
 	for _, op := range waiting {
 		if op.Ticket == wr.Ticket {
@@ -239,9 +266,12 @@ func CheckMatch(w http.ResponseWriter, r *http.Request) {
 			}
 			rm.Game.Player1Name = op.Username
 			rm.Game.Player2Name = wr.Username
+
 			roomsMu.Lock()
 			rooms[code] = rm
 			roomsMu.Unlock()
+
+			// remove both from queues
 			for i, wq := range waiting {
 				if wq.Ticket == op.Ticket {
 					waiting = append(waiting[:i], waiting[i+1:]...)
@@ -256,6 +286,7 @@ func CheckMatch(w http.ResponseWriter, r *http.Request) {
 			}
 			delete(tickets, op.Ticket)
 			delete(tickets, wr.Ticket)
+
 			select {
 			case op.Ch <- code:
 			default:
@@ -265,9 +296,10 @@ func CheckMatch(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
+	// falls back to long‑poll
 	ch := wr.Ch
 	mmMu.Unlock()
-
 	select {
 	case code := <-ch:
 		http.Redirect(w, r, "/game/"+code, http.StatusSeeOther)
@@ -281,6 +313,7 @@ func CheckMatch(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// LeaveMatch removes the ticket for this session and clears any of the user's pending entries
 func LeaveMatch(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -290,13 +323,16 @@ func LeaveMatch(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
+
 	t := path.Base(strings.TrimSuffix(r.URL.Path, "/"))
 	if t != "" {
 		removeTicket(t)
 	}
+
 	u := auth.CurrentUser(userStore, r)
 	if u != nil {
 		purgeUserFromQueue(u.Username)
 	}
+
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

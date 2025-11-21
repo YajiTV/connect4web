@@ -3,9 +3,9 @@ package game
 import (
 	"math"
 	"math/rand"
-	"time"
 )
 
+// opponent returns the opposing player for p
 func opponent(p Cell) Cell {
 	if p == Player1 {
 		return Player2
@@ -13,6 +13,7 @@ func opponent(p Cell) Cell {
 	return Player1
 }
 
+// validMoves returns columns that can accept a new piece
 func validMoves(b *Board) []int {
 	var out []int
 	for c := 0; c < Cols; c++ {
@@ -23,6 +24,7 @@ func validMoves(b *Board) []int {
 	return out
 }
 
+// apply tries to drop a piece in col and returns the new board and whether it succeeded
 func apply(b Board, col int, p Cell) (Board, bool) {
 	nb := b
 	_, err := AddPeon(&nb, col, p)
@@ -32,6 +34,7 @@ func apply(b Board, col int, p Cell) (Board, bool) {
 	return nb, true
 }
 
+// terminalScore detects wins or draws and generates a score factoring in depth
 func terminalScore(b *Board, me Cell, depth int) (bool, int) {
 	if w, ok := IsGameWon(b); ok {
 		if w == me {
@@ -45,6 +48,7 @@ func terminalScore(b *Board, me Cell, depth int) (bool, int) {
 	return false, 0
 }
 
+// countWindow scores a 4‑cell window for me and penalizes threats by the opponent
 func countWindow(vals []Cell, me Cell) int {
 	opp := opponent(me)
 	meCount := 0
@@ -77,8 +81,11 @@ func countWindow(vals []Cell, me Cell) int {
 	return 0
 }
 
+// eval generates a heuristic score for me favoring center control and potential lines
 func eval(b *Board, me Cell) int {
 	score := 0
+
+	// favors center column occupancy
 	centerCol := Cols / 2
 	centerCount := 0
 	for r := 0; r < Rows; r++ {
@@ -87,21 +94,29 @@ func eval(b *Board, me Cell) int {
 		}
 	}
 	score += centerCount * 6
+
+	// scores horizontal windows
 	for r := 0; r < Rows; r++ {
 		for c := 0; c <= Cols-4; c++ {
 			score += countWindow([]Cell{b.Grid[r][c], b.Grid[r][c+1], b.Grid[r][c+2], b.Grid[r][c+3]}, me)
 		}
 	}
+
+	// scores vertical windows
 	for c := 0; c < Cols; c++ {
 		for r := 0; r <= Rows-4; r++ {
 			score += countWindow([]Cell{b.Grid[r][c], b.Grid[r+1][c], b.Grid[r+2][c], b.Grid[r+3][c]}, me)
 		}
 	}
+
+	// scores diagonal down‑right windows
 	for r := 0; r <= Rows-4; r++ {
 		for c := 0; c <= Cols-4; c++ {
 			score += countWindow([]Cell{b.Grid[r][c], b.Grid[r+1][c+1], b.Grid[r+2][c+2], b.Grid[r+3][c+3]}, me)
 		}
 	}
+
+	// scores diagonal up‑right windows
 	for r := 3; r < Rows; r++ {
 		for c := 0; c <= Cols-4; c++ {
 			score += countWindow([]Cell{b.Grid[r][c], b.Grid[r-1][c+1], b.Grid[r-2][c+2], b.Grid[r-3][c+3]}, me)
@@ -110,6 +125,7 @@ func eval(b *Board, me Cell) int {
 	return score
 }
 
+// immediateWin tries each valid move and returns the column that wins immediately or -1
 func immediateWin(b *Board, p Cell) int {
 	moves := validMoves(b)
 	for _, c := range moves {
@@ -124,6 +140,7 @@ func immediateWin(b *Board, p Cell) int {
 	return -1
 }
 
+// orderMovesCenterFirst orders moves by proximity to center, preferring center first
 func orderMovesCenterFirst(moves []int) []int {
 	center := Cols / 2
 	type pair struct{ c, w int }
@@ -131,6 +148,7 @@ func orderMovesCenterFirst(moves []int) []int {
 	for _, m := range moves {
 		ps = append(ps, pair{m, -absInt(m - center)})
 	}
+	// simple selection sort for stability and clarity
 	for i := 0; i < len(ps)-1; i++ {
 		for j := i + 1; j < len(ps); j++ {
 			if ps[j].w > ps[i].w {
@@ -145,6 +163,7 @@ func orderMovesCenterFirst(moves []int) []int {
 	return out
 }
 
+// absInt returns the absolute value of x
 func absInt(x int) int {
 	if x < 0 {
 		return -x
@@ -152,6 +171,7 @@ func absInt(x int) int {
 	return x
 }
 
+// minimax explores moves with alpha‑beta pruning and generates a heuristic score
 func minimax(b Board, depth int, alpha, beta int, maximizing bool, me Cell) int {
 	if term, sc := terminalScore(&b, me, depth); term {
 		return sc
@@ -159,6 +179,7 @@ func minimax(b Board, depth int, alpha, beta int, maximizing bool, me Cell) int 
 	if depth == 0 {
 		return eval(&b, me)
 	}
+
 	moves := orderMovesCenterFirst(validMoves(&b))
 	if maximizing {
 		maxEval := math.MinInt32
@@ -180,6 +201,7 @@ func minimax(b Board, depth int, alpha, beta int, maximizing bool, me Cell) int 
 		}
 		return maxEval
 	}
+
 	minEval := math.MaxInt32
 	opp := opponent(me)
 	for _, c := range moves {
@@ -201,15 +223,16 @@ func minimax(b Board, depth int, alpha, beta int, maximizing bool, me Cell) int 
 	return minEval
 }
 
+// pickRandom picks any valid move uniformly at random
 func pickRandom(b *Board) int {
 	ms := validMoves(b)
 	if len(ms) == 0 {
 		return -1
 	}
-	rand.Seed(time.Now().UnixNano())
 	return ms[rand.Intn(len(ms))]
 }
 
+// pickGreedy tries to win now, blocks opponent wins, then picks the highest immediate eval
 func pickGreedy(b *Board, me Cell) int {
 	if c := immediateWin(b, me); c >= 0 {
 		return c
@@ -236,6 +259,7 @@ func pickGreedy(b *Board, me Cell) int {
 	return best
 }
 
+// pickMinimax generates a move using minimax at the requested depth
 func pickMinimax(b *Board, me Cell, depth int) int {
 	moves := orderMovesCenterFirst(validMoves(b))
 	best := -1
@@ -254,6 +278,7 @@ func pickMinimax(b *Board, me Cell, depth int) int {
 	return best
 }
 
+// ComputeBotMove generates a move based on difficulty level
 func ComputeBotMove(b *Board, who Cell, level int) int {
 	if level <= 1 {
 		return pickRandom(b)

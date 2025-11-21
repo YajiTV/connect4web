@@ -6,13 +6,16 @@ import (
 	"net/http"
 )
 
+// ShowGame renders the game container page
 func ShowGame(w http.ResponseWriter, r *http.Request) {
+	// resolves room from the URL
 	rm, code := roomFromPath(r.URL.Path)
 	if rm == nil || code == "" {
 		NotFound(w, r)
 		return
 	}
 
+	// parses and renders the template
 	tmpl, err := template.ParseFS(templateFS, "base.tmpl", "game.tmpl")
 	if err != nil {
 		log.Printf("Template error: %v", err)
@@ -20,8 +23,10 @@ func ShowGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// prepares header data and reveal flag
 	reveal := r.URL.Query().Get("reveal") == "1"
 	h := makeHeader(w, r)
+
 	_ = tmpl.ExecuteTemplate(w, "base", struct {
 		Code             string
 		Random           bool

@@ -1,0 +1,72 @@
+# --- Go / build artifacts ---
+/bin/
+/build/
+/dist/
+/out/
+/coverage/
+/cover.out
+*.test
+*.out
+
+# Plateformes (binaires)
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go workspaces
+go.work
+go.work.sum
+
+# Vendor
+vendor/
+
+# --- Logs & runtime ---
+*.log
+logs/
+tmp/
+tmp-*/
+*.pid
+
+# --- Outils de dev ---
+# Air (hot reload) crée souvent un dossier tmp ; on *versionne* .air.toml
+.air/
+# (NOTE: ne PAS ignorer .air.toml si tu veux partager la config)
+
+# --- IDE / éditeurs ---
+# JetBrains (GoLand / IntelliJ)
+.idea/
+*.iml
+# VS Code
+.vscode/
+.history/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Secrets / env ---
+.env
+.env.*
+*.local
+
+# --- Frontend optionnel ---
+webapp/node_modules/
+webapp/.next/
+webapp/.nuxt/
+webapp/dist/
+webapp/build/
+webapp/.vite/
+webapp/coverage/
+webapp/*.log
+# maps générées
+*.map
+
+# --- Caches génériques ---
+.cache/
+**/.cache/
+
+*.key
+data/users.json
+/data/

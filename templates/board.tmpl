@@ -1,6 +1,6 @@
 {{define "board"}}
     <!doctype html>
-    <html lang="fr">
+    <html lang="en">
     <head>
         <meta charset="utf-8">
         <title>Board {{.Code}}</title>
@@ -8,6 +8,7 @@
         <link rel="stylesheet" href="/static/css/board.css">
         <link rel="stylesheet" href="/static/css/util.css">
         <meta name="color-scheme" content="light dark">
+        {{/* slow refreshes when animating a new move, fast otherwise */}}
         {{if .IsNewMove}}
             <meta http-equiv="refresh" content="1.2;url=/board/{{.Code}}?rev={{.Rev}}">
         {{else}}
@@ -15,9 +16,11 @@
         {{end}}
     </head>
     <body class="px-0 bg-transparent" style="margin:0;padding:var(--pad);">
+    {{/* waiting room header until both players are present */}}
     {{if not .Ready}}
         <p class="status">Waiting for a second player</p>
     {{else}}
+        {{/* end-of-game panel with rematch controls and winner banner */}}
         {{if .Over}}
             {{if eq .Winner 0}}<p class="status">Draw</p>{{end}}
             {{if eq .Winner 1}}<p class="victory">Win {{.P1Name}}</p><div class="confetti-container"></div>{{end}}
@@ -29,6 +32,7 @@
                     {{if .RematchP1}}P1 ready{{else}}P1 waiting{{end}} —
                     {{if .RematchP2}}P2 ready{{else}}P2 waiting{{end}}
                 </p>
+                {{/* each side accepts rematch only once and only for self */}}
                 {{if and (eq .Self 1) (not .RematchP1)}}
                     <form action="/rematch/{{.Code}}" method="post" target="board" class="mb-12">
                         <button class="btn" type="submit">Accept rematch</button>
@@ -41,6 +45,7 @@
                 {{end}}
             </div>
         {{else}}
+            {{/* in-game HUD showing names and whose turn it is */}}
             <div class="hud mb-12">
                 <div class="player"><span class="player-badge p1"></span><span class="player-name">{{.P1Name}}</span></div>
                 <div class="turn-badge">
@@ -50,29 +55,44 @@
                 </div>
                 <div class="player right"><span class="player-name">{{.P2Name}}</span><span class="player-badge p2"></span></div>
             </div>
+            {{/* clock iframe shows countdown and also drives forfeit when time elapses */}}
             <iframe title="Clock" name="clock" src="/clock/{{.Code}}" class="w-full h-44 mb-14 rounded-16 shadow-2 bg-transparent" style="border:0;"></iframe>
         {{end}}
     {{end}}
 
     <div class="game-wrap mt-16">
+        {{/* submitting a column posts to /play/{code} and reloads this board in the same target */}}
         <form action="/play/{{.Code}}" method="post" target="board">
             <div class="board-shell">
+                {{/* attaches a CSS class for hover cues when it is your turn */}}
                 <div class="game-board {{if and .CanPlay (not .Over)}}{{if (eq .NextPlayer 1)}}p1-turn{{else}}p2-turn{{end}}{{end}}">
+                    {{/* columns loop: 7 columns in Connect Four */}}
                     {{range $colIndex := Iterate 7}}
+                        {{/* compute first empty row for ghost token and button disabling */}}
                         {{$next := NextEmptyRow $.Grid $colIndex}}
                         <div class="column-wrapper">
+                            {{/* column submit button is disabled if not ready/over/not your turn/column full */}}
                             <button class="column-btn" type="submit" name="column" value="{{$colIndex}}" {{if or (not $.Ready) $.Over (not $.CanPlay) (eq $next -1)}}disabled{{end}} aria-label="Column {{$colIndex}}"></button>
+
+                            {{/* rows loop: 6 rows from top to bottom for rendering cells */}}
                             {{range $rowIndex := Iterate 6}}
                                 {{$cell := index (index $.Grid $rowIndex) $colIndex}}
+                                {{/* empty cell */}}
                                 {{if eq $cell 0}}
                                     <div class="cell empty"></div>
                                 {{else if eq $cell 1}}
+                                    {{/* player 1 disc; add 'drop' class and animation only for the last move */}}
                                     <div class="cell p1 {{if and $.IsNewMove $.HasLast (eq $rowIndex $.LastRow) (eq $colIndex $.LastCol)}}drop{{end}}" {{if and $.IsNewMove $.HasLast (eq $rowIndex $.LastRow) (eq $colIndex $.LastCol)}}style="--row: {{$rowIndex}}; animation-duration: {{DropDuration $rowIndex}}ms"{{end}}></div>
                                 {{else if eq $cell 2}}
+                                    {{/* player 2 disc; same conditional animation as above */}}
                                     <div class="cell p2 {{if and $.IsNewMove $.HasLast (eq $rowIndex $.LastRow) (eq $colIndex $.LastCol)}}drop{{end}}" {{if and $.IsNewMove $.HasLast (eq $rowIndex $.LastRow) (eq $colIndex $.LastCol)}}style="--row: {{$rowIndex}}; animation-duration: {{DropDuration $rowIndex}}ms"{{end}}></div>
                                 {{end}}
                             {{end}}
+
+                            {{/* ghost shows where the next token would land in this column */}}
                             {{if ge $next 0}}<div class="cell ghost" data-row="{{$next}}"></div>{{end}}
+
+                            {{/* pending piece animation overlay on the just-played column */}}
                             {{if and $.IsNewMove $.HasLast (eq $colIndex $.LastCol)}}
                                 <div class="cell pending" data-row="{{$.LastRow}}" style="animation-duration: {{DropDuration $.LastRow}}ms"></div>
                             {{end}}
@@ -84,25 +104,4 @@
     </div>
     </body>
     </html>
-{{end}}
-
-{{define "title"}}Power 4 — Game {{.Code}}{{end}}
-{{define "content"}}
-    <div class="flex items-center justify-between gap-12 mb-12">
-        <p class="status m-0">
-            {{if .Random}}
-                Random match
-            {{else}}
-                {{if .Reveal}}
-                    Code: <span style="font-weight:800;letter-spacing:0.02em">{{.Code}}</span>
-                    <a class="header-link" href="/game/{{.Code}}">Hide</a>
-                {{else}}
-                    Game code hidden
-                    <a class="header-link" href="/game/{{.Code}}?reveal=1">Show</a>
-                {{end}}
-            {{end}}
-        </p>
-        <a class="btn btn-secondary" href="/">Home</a>
-    </div>
-    <iframe title="Board" name="board" src="/board/{{.Code}}?rev=0" class="w-full rounded-16 shadow-2 bg-transparent" style="height:740px;border:0;"></iframe>
 {{end}}

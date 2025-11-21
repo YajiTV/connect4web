@@ -15,19 +15,23 @@ const (
 )
 
 type Board struct {
-	Grid  [Rows][Cols]Cell
-	Moves int
+	Grid  [Rows][Cols]Cell // board cells in row‑major order
+	Moves int              // total number of pieces placed so far
 }
 
+// NewBoard creates an empty board with zero moves
 func NewBoard() Board {
 	return Board{}
 }
 
+// IsFull returns whether the board has no remaining moves
 func IsFull(b *Board) bool {
 	return b.Moves >= Rows*Cols
 }
 
+// IsGameWon checks horizontal, vertical, and diagonal lines and returns the winner if any
 func IsGameWon(board *Board) (Cell, bool) {
+	// checks horizontal sequences
 	for r := 0; r < Rows; r++ {
 		for c := 0; c <= Cols-toWin; c++ {
 			p := board.Grid[r][c]
@@ -39,6 +43,8 @@ func IsGameWon(board *Board) (Cell, bool) {
 			}
 		}
 	}
+
+	// checks vertical sequences
 	for c := 0; c < Cols; c++ {
 		for r := 0; r <= Rows-toWin; r++ {
 			p := board.Grid[r][c]
@@ -50,6 +56,8 @@ func IsGameWon(board *Board) (Cell, bool) {
 			}
 		}
 	}
+
+	// checks diagonal down‑right sequences
 	for r := 0; r <= Rows-toWin; r++ {
 		for c := 0; c <= Cols-toWin; c++ {
 			p := board.Grid[r][c]
@@ -61,6 +69,8 @@ func IsGameWon(board *Board) (Cell, bool) {
 			}
 		}
 	}
+
+	// checks diagonal up‑right sequences
 	for r := toWin - 1; r < Rows; r++ {
 		for c := 0; c <= Cols-toWin; c++ {
 			p := board.Grid[r][c]
@@ -72,5 +82,6 @@ func IsGameWon(board *Board) (Cell, bool) {
 			}
 		}
 	}
+
 	return Empty, false
 }

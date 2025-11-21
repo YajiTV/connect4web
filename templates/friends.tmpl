@@ -1,4 +1,5 @@
 {{define "title"}}Friends{{end}}
+
 {{define "content"}}
     <h2>Friends</h2>
 
@@ -6,31 +7,45 @@
         <section style="flex:1;min-width:280px;max-width:420px">
             <h3>Find & Add</h3>
             <form method="get" action="/friends" style="margin-bottom:12px">
-                    <input type="text" name="q" placeholder="Exact username" value="{{.SearchQuery}}" />
-                    <button type="submit" class="fr-btn fr-btn-primary">Search</button>
+                <div class="control-row">
+                    <label for="q">Exact username</label>
+                    <input id="q" type="text" name="q" placeholder="Exact username" value="{{.SearchQuery}}" />
+                </div>
+                <button type="submit" class="fr-btn fr-btn-primary">Search</button>
             </form>
+
+            {{/* conditional block visible only after a query */}}
             {{if .SearchQuery}}
+                {{/* shows result state based on server-side lookup */}}
                 {{if .SearchFound}}
                     <div style="margin:8px 0">Found user: <strong>{{.SearchUser}}</strong></div>
+
+                    {{/* already friends: allow direct challenge */}}
                     {{if .AreFriends}}
                         <form method="post" action="/friends/challenge" style="margin:4px 0">
                             <input type="hidden" name="csrf" value="{{.CSRF}}">
                             <input type="hidden" name="friend" value="{{.SearchUser}}">
                             <button type="submit" class="fr-btn fr-btn-accent">Challenge</button>
                         </form>
+
+                        {{/* outbound request already sent */}}
                     {{else if .OutPending}}
                         <div class="muted">Request sent</div>
+
+                        {{/* inbound request exists: can accept or decline */}}
                     {{else if .InPending}}
                         <form method="post" action="/friends/request/accept" style="display:inline-block;margin-right:6px">
                             <input type="hidden" name="csrf" value="{{.CSRF}}">
                             <input type="hidden" name="from" value="{{.SearchUser}}">
-                            <button type="submit" class="fr-btn">Accept</button>
+                            <button type="submit" class="fr-btn fr-btn-accent">Accept</button>
                         </form>
                         <form method="post" action="/friends/request/decline" style="display:inline-block">
                             <input type="hidden" name="csrf" value="{{.CSRF}}">
                             <input type="hidden" name="from" value="{{.SearchUser}}">
                             <button type="submit" class="fr-btn">Decline</button>
                         </form>
+
+                        {{/* no existing relationship: send a new request */}}
                     {{else}}
                         <form method="post" action="/friends/request">
                             <input type="hidden" name="csrf" value="{{.CSRF}}">
@@ -43,12 +58,16 @@
                 {{end}}
             {{end}}
         </section>
+
         <section style="flex:1;min-width:320px">
             <h3>Requests & Invites</h3>
+            {{/* iframe pulls live incoming friend requests and challenge invites */}}
             <iframe class="friends-frame" src="/friends/section/requests" title="Requests & Invites" loading="lazy"></iframe>
         </section>
+
         <section style="flex:1;min-width:320px">
             <h3>Your Friends</h3>
+            {{/* iframe lists current friends, rendered server-side */}}
             <iframe class="friends-frame" src="/friends/section/friends" title="Your Friends" loading="lazy"></iframe>
         </section>
     </div>

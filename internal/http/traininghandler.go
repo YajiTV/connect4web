@@ -10,6 +10,7 @@ import (
 	"power4/internal/game"
 )
 
+// ShowTraining renders the training mode selector
 func ShowTraining(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFS(templateFS, "base.tmpl", "training.tmpl")
 	if err != nil {
@@ -34,6 +35,7 @@ func ShowTraining(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// levelName returns a label for the bot difficulty level
 func levelName(n int) string {
 	switch n {
 	case 1:
@@ -49,6 +51,7 @@ func levelName(n int) string {
 	}
 }
 
+// StartTraining creates a bot match at the chosen difficulty
 func StartTraining(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/training", http.StatusSeeOther)
@@ -58,11 +61,13 @@ func StartTraining(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/training", http.StatusSeeOther)
 		return
 	}
+
 	u := auth.CurrentUser(userStore, r)
 	if u == nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
+
 	pid := getOrSetPID(w, r)
 	lv, _ := strconv.Atoi(r.FormValue("level"))
 	if lv < 1 {
@@ -71,6 +76,7 @@ func StartTraining(w http.ResponseWriter, r *http.Request) {
 	if lv > 5 {
 		lv = 5
 	}
+
 	now := time.Now()
 	code := genCode()
 	rm := &Room{
@@ -91,8 +97,10 @@ func StartTraining(w http.ResponseWriter, r *http.Request) {
 	}
 	rm.Game.Player1Name = u.Username
 	rm.Game.Player2Name = "Bot " + levelName(lv)
+
 	roomsMu.Lock()
 	rooms[code] = rm
 	roomsMu.Unlock()
+
 	http.Redirect(w, r, "/game/"+code, http.StatusSeeOther)
 }

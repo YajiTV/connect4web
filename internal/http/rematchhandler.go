@@ -8,24 +8,32 @@ import (
 	"power4/internal/game"
 )
 
+// Rematch records rematch consent and starts a new game when both sides agree or vs bot
 func Rematch(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
+
+	// resolves room
 	rm, code := roomFromPath(r.URL.Path)
 	if rm == nil {
 		NotFound(w, r)
 		return
 	}
+
+	// only after the previous game is over
 	if !rm.Game.Over {
 		http.Redirect(w, r, "/board/"+code, http.StatusSeeOther)
 		return
 	}
+
 	pid := getOrSetPID(w, r)
 
 	roomsMu.Lock()
 	changed := false
+
+	// records each player's consent once
 	if pid == rm.Player1ID && !rm.RematchP1 {
 		rm.RematchP1 = true
 		rm.Rev++
@@ -36,10 +44,13 @@ func Rematch(w http.ResponseWriter, r *http.Request) {
 		rm.Rev++
 		changed = true
 	}
+
+	// starts immediately for bot games, otherwise after both consent
 	start := false
 	if rm.Bot {
 		rm.RematchP1 = true
 		rm.RematchP2 = true
+
 		game.Reset(rm.Game)
 		rm.Game.NextPlayer = rm.StartNext
 		if rm.StartNext == game.Player1 {
@@ -70,6 +81,7 @@ func Rematch(w http.ResponseWriter, r *http.Request) {
 	}
 	roomsMu.Unlock()
 
+	// notifies subscribers and redirects back to board
 	if changed || start {
 		notify(rm)
 	}

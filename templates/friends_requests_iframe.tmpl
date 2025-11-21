@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>Requests & Invites</title>
+    <!-- refresh the iframe regularly to keep requests/invites current -->
     <meta http-equiv="refresh" content="2">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/static/css/base.css">
@@ -11,17 +12,22 @@
 <body class="iframe-body">
 <div class="iframe-panel">
     <div style="margin-bottom:8px"><em class="muted">Incoming friend requests</em></div>
+
+    {{/* show a list only if there are pending friend requests */}}
     {{if .Requests}}
         <ul>
+            {{/* range over usernames in Requests; the dot is each requester username */}}
             {{range .Requests}}
                 <li style="margin:6px 0">
                     {{.}}
+                    {{/* accept request; CSRF taken from the top-level dot with $. */}}
                     <form method="post" action="/friends/request/accept" style="display:inline-block;margin-left:8px">
                         <input type="hidden" name="csrf" value="{{$.CSRF}}">
                         <input type="hidden" name="from" value="{{.}}">
                         <input type="hidden" name="back" value="/friends/section/requests">
-                        <button type="submit" class="fr-btn">Accept</button>
+                        <button type="submit" class="fr-btn fr-btn-accent">Accept</button>
                     </form>
+                    {{/* decline request; after action, iframe reloads the same section via 'back' */}}
                     <form method="post" action="/friends/request/decline" style="display:inline-block;margin-left:6px">
                         <input type="hidden" name="csrf" value="{{$.CSRF}}">
                         <input type="hidden" name="from" value="{{.}}">
@@ -36,16 +42,21 @@
     {{end}}
 
     <div style="margin:12px 0 8px"><em class="muted">Incoming challenges</em></div>
+
+    {{/* render incoming challenge invites if present */}}
     {{if .Invites}}
         <ul>
+            {{/* each invite has Ticket, FromUser, and CreatedISO */}}
             {{range .Invites}}
                 <li style="margin:6px 0">
                     From {{.FromUser}}
+                    {{/* accept: target _top to leave iframe and navigate to game when matched */}}
                     <form method="post" action="/friends/challenge/accept" target="_top" style="display:inline-block;margin-left:8px">
                         <input type="hidden" name="csrf" value="{{$.CSRF}}">
                         <input type="hidden" name="ticket" value="{{.Ticket}}">
                         <button type="submit" class="fr-btn fr-btn-accent">Accept</button>
                     </form>
+                    {{/* decline: stay in iframe and refresh the section */}}
                     <form method="post" action="/friends/challenge/decline" style="display:inline-block;margin-left:6px">
                         <input type="hidden" name="csrf" value="{{$.CSRF}}">
                         <input type="hidden" name="ticket" value="{{.Ticket}}">
